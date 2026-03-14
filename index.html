@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABM War Room — Notion Template</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --black: #0a0a0a;
+  --white: #ffffff;
+  --off: #f8f7f4;
+  --gray-1: #f0efec;
+  --gray-2: #e2e0db;
+  --gray-3: #a8a5a0;
+  --gray-4: #5c5a57;
+  --accent: #e8420a;
+  --accent-hover: #cc3508;
+  --accent-light: #fff2ee;
+  --accent-mid: #fdddd4;
+  --green: #16a34a;
+  --notion-border: #e9e8e5;
+  --notion-sidebar: #f7f6f3;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--white);
+  color: var(--black);
+  font-family: 'Geist', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── MODAL OVERLAY ─────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,10,10,0.55);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 48px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(16px) scale(0.98);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  position: relative;
+}
+.modal-overlay.open .modal {
+  transform: translateY(0) scale(1);
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px; right: 20px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--gray-1);
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  color: var(--gray-4);
+  transition: background 0.15s;
+}
+.modal-close:hover { background: var(--gray-2); }
+
+.modal-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.modal h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px;
+  line-height: 1.15;
+  color: var(--black);
+  margin-bottom: 8px;
+}
+
+.modal-sub {
+  font-size: 13px;
+  color: var(--gray-4);
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.modal-sub strong { color: var(--black); font-weight: 500; }
+
+.upgrade-badge {
+  background: var(--accent-light);
+  border: 1px solid var(--accent-mid);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.upgrade-badge .badge-icon { font-size: 18px; flex-shrink: 0; }
+.upgrade-badge p {
+  font-size: 12.5px;
+  color: var(--black);
+  line-height: 1.5;
+  font-weight: 400;
+}
+.upgrade-badge strong { color: var(--accent); font-weight: 600; }
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--black);
+  letter-spacing: 0.02em;
+}
+
+.form-input {
+  border: 1.5px solid var(--gray-2);
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  color: var(--black);
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-input::placeholder { color: var(--gray-3); }
+
+.radio-group {
+  display: flex;
+  gap: 10px;
+}
+
+.radio-option {
+  flex: 1;
+  border: 1.5px solid var(--gray-2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--gray-4);
+  transition: all 0.15s;
+  user-select: none;
+}
+.radio-option:hover { border-color: var(--accent); color: var(--black); }
+.radio-option.selected {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.radio-option input { display: none; }
+
+.radio-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.radio-option.selected .radio-dot::after {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.btn-submit {
+  width: 100%;
+  background: var(--accent);
+  color: var(--white);
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.15s, transform 0.1s;
+  letter-spacing: 0.02em;
+}
+.btn-submit:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+.form-disclaimer {
+  font-size: 11px;
+  color: var(--gray-3);
+  text-align: center;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+/* Success state */
+.modal-success {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 0;
+}
+.modal-success.show { display: flex; }
+.modal-form.hide { display: none; }
+
+.success-icon {
+  width: 56px; height: 56px;
+  background: #dcfce7;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.modal-success h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 24px;
+  color: var(--black);
+  margin-bottom: 8px;
+}
+.modal-success p {
+  font-size: 14px;
+  color: var(--gray-4);
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+/* ── NAV ─────────────────────────────────── */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 26px 60px;
+  position: relative;
+  z-index: 10;
+  border-bottom: 1px solid var(--gray-1);
+}
+
+.nav-logo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--black);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.logo-icon {
+  width: 26px; height: 26px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.nav-tag { font-size: 12px; color: var(--gray-3); }
+.nav-cta {
+  background: var(--black);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 9px 20px;
+  border-radius: 7px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  font-family: 'Geist', sans-serif;
+  transition: background 0.15s;
+}
+.nav-cta:hover { background: #222; }
+
+/* ── HERO ─────────────────────────────────── */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: calc(100vh - 73px);
+  padding: 48px 60px 60px;
+  gap: 40px;
+  position: relative;
+  overflow: hidden;
+  background: var(--white);
+}
+
+/* Dot pattern */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, #d8d6d0 1px, transparent 1px);
+  background-size: 30px 30px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Warm glow top right */
+.hero::after {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(232,66,10,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-left {
+  position: relative;
+  z-index: 2;
+  padding-right: 32px;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-mid);
+  padding: 5px 12px;
+  border-radius: 100px;
+}
+
+.hero-h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(44px, 4.2vw, 66px);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  color: var(--black);
+  margin-bottom: 20px;
+}
+.hero-h1 .italic { font-style: italic; color: var(--accent); }
+
+.hero-sub {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--gray-4);
+  margin-bottom: 20px;
+  max-width: 400px;
+}
+.hero-sub strong { color: var(--black); font-weight: 500; }
+
+/* Free upgrade callout */
+.hero-upgrade {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #15803d;
+  font-weight: 500;
+  margin-bottom: 28px;
+}
+.hero-upgrade .check { color: var(--green); font-size: 14px; }
+
+.hero-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.btn-main {
+  background: var(--accent);
+  color: var(--white);
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 8px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(232,66,10,0.25), 0 8px 24px rgba(232,66,10,0.12);
+}
+.btn-main:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(232,66,10,0.3); }
+
+.btn-ghost {
+  font-size: 13px;
+  color: var(--gray-4);
+  text-decoration: none;
+  border-bottom: 1px solid var(--gray-2);
+  padding-bottom: 1px;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { color: var(--black); border-color: var(--black); }
+
+.hero-stats {
+  display: flex;
+  gap: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--gray-2);
+}
+.stat { display: flex; flex-direction: column; gap: 3px; }
+.stat-n { font-family: 'Instrument Serif', serif; font-size: 28px; color: var(--black); line-height: 1; }
+.stat-l { font-size: 11px; color: var(--gray-3); letter-spacing: 0.04em; }
+
+/* ── NOTION MOCKUP HERO ───────────────────── */
+.hero-right {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.mockup {
+  width: 100%;
+  max-width: 580px;
+  background: white;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.07),
+    0 8px 16px rgba(0,0,0,0.06),
+    0 24px 60px rgba(0,0,0,0.12);
+  overflow: hidden;
+  transform: perspective(1200px) rotateY(-4deg) rotateX(2deg);
+  transition: transform 0.5s ease;
+  animation: floatIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both;
+}
+.mockup:hover { transform: perspective(1200px) rotateY(-1.5deg) rotateX(1deg) translateY(-4px); }
+
+@keyframes floatIn {
+  from { opacity:0; transform:perspective(1200px) rotateY(-4deg) rotateX(2deg) translateY(20px); }
+  to { opacity:1; transform:perspective(1200px) rotateY(-4deg) rotateX(2deg) translateY(0); }
+}
+
+.mockup-chrome {
+  background: #f5f4f0;
+  border-bottom: 1px solid var(--notion-border);
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.chrome-dots { display:flex; gap:5px; }
+.chrome-dot { width:9px; height:9px; border-radius:50%; }
+.chrome-dot.r { background:#ff5f57; }
+.chrome-dot.y { background:#febc2e; }
+.chrome-dot.g { background:#28c840; }
+.chrome-url {
+  flex:1;
+  background: #eceae6;
+  border-radius:4px;
+  padding: 4px 10px;
+  font-size:10px;
+  color:var(--gray-3);
+  text-align:center;
+  font-family: monospace;
+}
+
+.notion-app {
+  display:grid;
+  grid-template-columns: 175px 1fr;
+  height: 400px;
+  overflow: hidden;
+}
+
+.n-sidebar {
+  background: var(--notion-sidebar);
+  border-right: 1px solid var(--notion-border);
+  padding: 12px 8px;
+}
+
+.n-ws {
+  display:flex; align-items:center; gap:7px;
+  padding: 5px 8px;
+  margin-bottom: 8px;
+}
+.n-ws-icon {
+  width:22px; height:22px;
+  background: var(--black);
+  border-radius:5px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:white; flex-shrink:0;
+}
+.n-ws-name { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.n-section { font-size:10px; font-weight:500; color:var(--gray-3); letter-spacing:0.08em; text-transform:uppercase; padding:8px 8px 4px; }
+
+.n-item {
+  display:flex; align-items:center; gap:6px;
+  padding:4px 8px;
+  border-radius:4px;
+  font-size:12px;
+  color:var(--gray-4);
+  white-space:nowrap;
+  overflow:hidden;
+}
+.n-item.active { background:rgba(0,0,0,0.07); color:var(--black); font-weight:500; }
+.n-item:hover { background:rgba(0,0,0,0.04); }
+.n-icon { font-size:13px; flex-shrink:0; }
+
+.n-main { padding:22px 24px; background:white; overflow:hidden; }
+.n-title { font-family:'Instrument Serif',serif; font-size:24px; color:var(--black); margin-bottom:3px; }
+.n-desc { font-size:11px; color:var(--gray-3); margin-bottom:16px; }
+
+.n-table { width:100%; border-collapse:collapse; font-size:11px; }
+.n-table th { background:#faf9f7; border-bottom:1px solid var(--notion-border); border-right:1px solid var(--notion-border); padding:5px 9px; text-align:left; font-weight:500; color:var(--gray-3); font-size:10.5px; white-space:nowrap; }
+.n-table td { border-bottom:1px solid var(--notion-border); border-right:1px solid var(--notion-border); padding:6px 9px; color:var(--black); white-space:nowrap; overflow:hidden; }
+.n-table tr:hover td { background:#faf9f7; }
+
+.tag { display:inline-flex; align-items:center; padding:2px 6px; border-radius:3px; font-size:10px; font-weight:500; gap:2px; }
+.t-red { background:#fde8e3; color:#b91c0c; }
+.t-green { background:#dff5e3; color:#166534; }
+.t-yellow { background:#fef3c7; color:#92400e; }
+.t-blue { background:#dbeafe; color:#1d4ed8; }
+.t-orange { background:#ffedd5; color:#9a3412; }
+.t-purple { background:#ede9fe; color:#6d28d9; }
+.t-gray { background:#f1f0ed; color:#6b6966; }
+
+.ai-badge { display:inline-flex; align-items:center; gap:2px; font-size:9px; background:linear-gradient(135deg,#fff1ed,#fde8df); color:var(--accent); border:1px solid #fad4c5; border-radius:3px; padding:1px 5px; font-weight:600; }
+
+.n-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:12px; }
+.n-card { background:var(--off); border-radius:6px; padding:9px 11px; border:1px solid var(--notion-border); }
+.n-card-l { font-size:9.5px; color:var(--gray-3); font-weight:500; letter-spacing:0.04em; text-transform:uppercase; margin-bottom:3px; }
+.n-card-v { font-family:'Instrument Serif',serif; font-size:17px; color:var(--black); line-height:1; }
+.n-card-s { font-size:9.5px; color:var(--gray-3); margin-top:2px; }
+
+/* ── ANIMATIONS hero left ─────────────── */
+.hero-left > * { animation:fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both; opacity:0; }
+.hero-eyebrow { animation-delay:0.05s; }
+.hero-h1 { animation-delay:0.12s; }
+.hero-sub { animation-delay:0.19s; }
+.hero-upgrade { animation-delay:0.24s; }
+.hero-cta-group { animation-delay:0.3s; }
+.hero-stats { animation-delay:0.37s; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
+
+/* ── SECTIONS ─────────────────────────── */
+.section { padding: 100px 60px; border-top: 1px solid var(--gray-2); }
+.section-label { font-size:11px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent); margin-bottom:12px; }
+.section-title { font-family:'Instrument Serif',serif; font-size:clamp(32px,3.5vw,52px); line-height:1.1; letter-spacing:-0.015em; margin-bottom:16px; }
+.section-title em { font-style:italic; color:var(--accent); }
+.section-sub { font-size:15px; color:var(--gray-4); max-width:520px; line-height:1.65; margin-bottom:56px; }
+
+/* ── FEATURE SECTIONS (alternating) ─── */
+.feature-block {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 72px;
+  align-items: center;
+  margin-bottom: 80px;
+  padding-bottom: 80px;
+  border-bottom: 1px solid var(--gray-1);
+}
+.feature-block:last-child { margin-bottom:0; padding-bottom:0; border-bottom:none; }
+.feature-block.reverse { direction: rtl; }
+.feature-block.reverse > * { direction: ltr; }
+
+.feature-copy { display:flex; flex-direction:column; }
+.feature-tag { display:inline-block; font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); background:var(--accent-light); border:1px solid var(--accent-mid); padding:4px 10px; border-radius:100px; margin-bottom:16px; width:fit-content; }
+.feature-h { font-family:'Instrument Serif',serif; font-size:clamp(26px,2.8vw,38px); line-height:1.15; letter-spacing:-0.01em; margin-bottom:12px; }
+.feature-p { font-size:14px; color:var(--gray-4); line-height:1.75; margin-bottom:20px; }
+
+.feature-list { display:flex; flex-direction:column; gap:10px; }
+.feature-item { display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--gray-4); line-height:1.5; }
+.feature-item::before { content:'→'; color:var(--accent); font-weight:600; flex-shrink:0; margin-top:1px; }
+
+/* ── MINI MOCKUPS ─────────────────────── */
+.mini-mockup {
+  background: white;
+  border-radius:10px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.07), 0 8px 32px rgba(0,0,0,0.1);
+  overflow:hidden;
+}
+
+.mini-chrome {
+  background:#f5f4f0;
+  border-bottom:1px solid var(--notion-border);
+  padding:8px 12px;
+  display:flex; align-items:center; gap:8px;
+}
+.mini-dots { display:flex; gap:4px; }
+.mini-dot { width:8px; height:8px; border-radius:50%; }
+.mini-dot.r { background:#ff5f57; }
+.mini-dot.y { background:#febc2e; }
+.mini-dot.g { background:#28c840; }
+
+.mini-body { padding:20px 22px; }
+
+/* Dashboard mockup */
+.dash-header { margin-bottom:14px; }
+.dash-title { font-family:'Instrument Serif',serif; font-size:20px; color:var(--black); margin-bottom:2px; }
+.dash-sub { font-size:11px; color:var(--gray-3); }
+
+.dash-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+.dash-card { background:var(--off); border:1px solid var(--notion-border); border-radius:7px; padding:12px; }
+.dash-card.alert { background:#fff7f5; border-color:#fad4c5; }
+.dash-card-l { font-size:9.5px; color:var(--gray-3); font-weight:500; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px; }
+.dash-card-v { font-family:'Instrument Serif',serif; font-size:22px; color:var(--black); line-height:1; }
+.dash-card-s { font-size:10px; margin-top:3px; color:var(--gray-3); }
+.dash-card.alert .dash-card-v { color:var(--accent); }
+
+.dash-list { display:flex; flex-direction:column; gap:6px; }
+.dash-row { display:flex; align-items:center; justify-content:space-between; background:var(--off); border:1px solid var(--notion-border); border-radius:6px; padding:8px 12px; }
+.dash-row-left { display:flex; flex-direction:column; gap:2px; }
+.dash-row-name { font-size:12px; font-weight:500; color:var(--black); }
+.dash-row-sub { font-size:10px; color:var(--gray-3); }
+.dash-row-right { display:flex; align-items:center; gap:6px; }
+
+/* Stakeholders mockup */
+.stk-list { display:flex; flex-direction:column; gap:8px; }
+.stk-item { display:flex; align-items:center; gap:10px; background:var(--off); border:1px solid var(--notion-border); border-radius:8px; padding:10px 14px; }
+.stk-avatar { width:32px; height:32px; border-radius:50%; background:var(--gray-2); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.stk-info { flex:1; }
+.stk-name { font-size:12px; font-weight:600; color:var(--black); }
+.stk-role { font-size:10px; color:var(--gray-3); margin-top:1px; }
+.stk-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+
+/* Briefing mockup */
+.briefing-box { background:var(--off); border:1px solid var(--notion-border); border-radius:8px; padding:14px; margin-bottom:10px; }
+.briefing-label { font-size:10px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.briefing-text { font-size:11.5px; color:var(--gray-4); line-height:1.6; }
+.briefing-btn { display:inline-flex; align-items:center; gap:5px; background:var(--accent); color:white; font-size:11px; font-weight:500; padding:7px 14px; border-radius:6px; cursor:pointer; }
+
+/* ── AI FEATURES GRID ─────────────────── */
+.ai-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--gray-2); border:1px solid var(--gray-2); border-radius:12px; overflow:hidden; margin-top:0; }
+.ai-card { background:white; padding:32px 28px; transition:background 0.15s; }
+.ai-card:hover { background:var(--off); }
+.ai-num { font-family:'Instrument Serif',serif; font-size:36px; color:var(--gray-1); line-height:1; margin-bottom:12px; }
+.ai-title { font-size:14px; font-weight:600; color:var(--black); margin-bottom:6px; line-height:1.35; }
+.ai-desc { font-size:12.5px; color:var(--gray-4); line-height:1.65; }
+.ai-tag { display:inline-block; margin-top:14px; font-size:9.5px; font-weight:600; letter-spacing:0.09em; text-transform:uppercase; color:var(--accent); background:var(--accent-light); padding:3px 8px; border-radius:4px; }
+
+/* ── UPGRADE SECTION ──────────────────── */
+.upgrade-section {
+  padding: 80px 60px;
+  background: var(--off);
+  border-top: 1px solid var(--gray-2);
+}
+.upgrade-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+.upgrade-copy .section-label { margin-bottom:10px; }
+.upgrade-copy h2 { font-family:'Instrument Serif',serif; font-size:clamp(28px,3vw,44px); line-height:1.15; margin-bottom:14px; }
+.upgrade-copy h2 em { font-style:italic; color:var(--accent); }
+.upgrade-copy p { font-size:14px; color:var(--gray-4); line-height:1.7; }
+.upgrade-card {
+  background: white;
+  border-radius:14px;
+  padding:28px;
+  border:1px solid var(--gray-2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+.upgrade-card-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.upgrade-notion-logo { width:36px; height:36px; background:black; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+.upgrade-card-title { font-size:14px; font-weight:600; color:var(--black); }
+.upgrade-card-sub { font-size:11px; color:var(--gray-3); }
+.upgrade-items { display:flex; flex-direction:column; gap:10px; }
+.upgrade-item { display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--gray-4); line-height:1.5; }
+.upgrade-check { width:18px; height:18px; background:#dcfce7; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0; margin-top:1px; }
+.upgrade-divider { height:1px; background:var(--gray-1); margin:16px 0; }
+.upgrade-disclaimer { font-size:11px; color:var(--gray-3); line-height:1.5; }
+.upgrade-disclaimer strong { color:var(--green); }
+
+/* ── CTA FINAL ───────────────────────── */
+.cta-section {
+  padding:120px 60px;
+  text-align:center;
+  border-top:1px solid var(--gray-2);
+  position:relative;
+  overflow:hidden;
+}
+.cta-section::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 100%, rgba(232,66,10,0.06) 0%, transparent 70%);
+}
+.cta-section h2 { font-family:'Instrument Serif',serif; font-size:clamp(36px,4vw,64px); line-height:1.08; margin-bottom:16px; position:relative; z-index:1; letter-spacing:-0.015em; }
+.cta-section h2 em { font-style:italic; color:var(--accent); }
+.cta-section p { font-size:15px; color:var(--gray-4); margin-bottom:36px; position:relative; z-index:1; }
+
+footer {
+  padding:28px 60px;
+  border-top:1px solid var(--gray-2);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:12px;
+  color:var(--gray-3);
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     MODAL FORM
+════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+
+    <!-- FORM -->
+    <div class="modal-form" id="modalForm">
+      <div class="modal-eyebrow">Acesso Gratuito</div>
+      <h2>Pegar o ABM War Room</h2>
+      <p class="modal-sub">Preencha abaixo e receba o template + o upgrade gratuito para o <strong>Notion Business AI</strong>.</p>
+
+      <div class="upgrade-badge">
+        <span class="badge-icon">⚡</span>
+        <p>Você vai receber acesso ao <strong>Notion Business AI</strong> — as features de AI do template exigem esse plano. <strong>Sem cobrança automática.</strong></p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Seu nome</label>
+        <input type="text" class="form-input" placeholder="João Silva" id="inputName">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nome da empresa</label>
+        <input type="text" class="form-input" placeholder="Empresa XPTO" id="inputCompany">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Seu melhor e-mail</label>
+        <input type="email" class="form-input" placeholder="joao@empresa.com" id="inputEmail">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Aceita o upgrade gratuito para o Notion Business AI?</label>
+        <p style="font-size:11px;color:var(--gray-3);margin-bottom:8px;">Sem cobrança automática — você ativa quando quiser.</p>
+        <div class="radio-group">
+          <label class="radio-option" id="radio-sim" onclick="selectRadio('sim')">
+            <input type="radio" name="upgrade" value="sim">
+            <div class="radio-dot"></div>
+            Sim, quero!
+          </label>
+          <label class="radio-option" id="radio-nao" onclick="selectRadio('nao')">
+            <input type="radio" name="upgrade" value="nao">
+            <div class="radio-dot"></div>
+            Não agora
+          </label>
+        </div>
+      </div>
+
+      <button class="btn-submit" onclick="submitForm()">Quero o template →</button>
+      <p class="form-disclaimer">Seus dados estão seguros. Nada de spam.</p>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="modal-success" id="modalSuccess">
+      <div class="success-icon">🎯</div>
+      <h3>Tudo certo!</h3>
+      <p style="margin-bottom:24px;">Seu acesso está pronto. Clique abaixo para abrir o template e fazer o duplicate para o seu Notion.</p>
+      <a href="https://fog-fender-af0.notion.site/ABM-War-Room-3214fc7ea0c881ac809de9ab3a373939" target="_blank" class="btn-submit" style="display:block;text-decoration:none;text-align:center;margin-bottom:12px;">
+        Abrir o ABM War Room no Notion →
+      </a>
+      <p style="font-size:11px;color:var(--gray-3);margin-top:4px;">Clique em <strong>"Duplicate"</strong> no canto superior direito para salvar no seu workspace.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     NAV
+════════════════════════════════════════ -->
+<nav>
+  <div class="nav-logo">
+    <div class="logo-icon">⚔️</div>
+    ABM War Room
+  </div>
+  <div class="nav-right">
+    <span class="nav-tag">Template Notion · AI-Powered</span>
+    <button class="nav-cta" onclick="openModal()">Acessar template →</button>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════
+     HERO — cabe em um print
+════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">Para founders e gestores B2B</div>
+    <h1 class="hero-h1">Co-pilot para quem<br>vende B2B<br><span class="italic">de verdade.</span></h1>
+    <p class="hero-sub">Enquanto você foca em fechar, a AI mapeia suas contas, prioriza onde agir e <strong>te avisa antes que o deal esfrie.</strong></p>
+
+    <div class="hero-upgrade">
+      <span class="check">✓</span>
+      Upgrade gratuito para Notion Business AI incluso — sem cobrança automática
+    </div>
+
+    <div class="hero-cta-group">
+      <button class="btn-main" onclick="openModal()">Quero o template grátis</button>
+      <a href="#features" class="btn-ghost">ver o que tem dentro</a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-n">+1k</span><span class="stat-l">GTM Database</span></div>
+      <div class="stat"><span class="stat-n">+500</span><span class="stat-l">Sales Ramp OS</span></div>
+      <div class="stat"><span class="stat-n">9</span><span class="stat-l">AI features nativas</span></div>
+    </div>
+  </div>
+
+  <!-- MOCKUP ACCOUNTS VIEW -->
+  <div class="hero-right">
+    <div class="mockup">
+      <div class="mockup-chrome">
+        <div class="chrome-dots">
+          <div class="chrome-dot r"></div>
+          <div class="chrome-dot y"></div>
+          <div class="chrome-dot g"></div>
+        </div>
+        <div class="chrome-url">notion.so › abm-war-room › accounts</div>
+      </div>
+      <div class="notion-app">
+        <div class="n-sidebar">
+          <div class="n-ws">
+            <div class="n-ws-icon">⚔️</div>
+            <div class="n-ws-name">ABM War Room</div>
+          </div>
+          <div class="n-section">Workspace</div>
+          <div class="n-item active"><span class="n-icon">🏢</span> Accounts</div>
+          <div class="n-item"><span class="n-icon">🏠</span> Dashboard</div>
+          <div class="n-item"><span class="n-icon">👥</span> Stakeholders</div>
+          <div class="n-item"><span class="n-icon">📞</span> Touchpoints</div>
+          <div class="n-item"><span class="n-icon">📚</span> Playbook</div>
+          <div class="n-item"><span class="n-icon">🤖</span> AI Setup</div>
+        </div>
+        <div class="n-main">
+          <div class="n-title">🏢 Accounts</div>
+          <div class="n-desc">7 contas · Score AI: Alta Prioridade</div>
+          <table class="n-table">
+            <thead>
+              <tr>
+                <th>Conta</th>
+                <th>Stage</th>
+                <th>Score AI</th>
+                <th>Momentum</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Empresa Alpha</strong></td>
+                <td><span class="tag t-purple">🤝 Negociação</span></td>
+                <td><span class="tag t-red">🔴 Alta</span></td>
+                <td>🔥 Acelerando</td>
+                <td>R$480k</td>
+              </tr>
+              <tr>
+                <td><strong>Beta Soluções</strong></td>
+                <td><span class="tag t-orange">📄 Proposta</span></td>
+                <td><span class="tag t-red">🔴 Alta</span></td>
+                <td>➡️ Estável</td>
+                <td>R$220k</td>
+              </tr>
+              <tr>
+                <td><strong>Gama Industries</strong></td>
+                <td><span class="tag t-orange">📄 Proposta</span></td>
+                <td><span class="tag t-yellow">🟡 Média</span></td>
+                <td>🧊 Esfriando</td>
+                <td>R$150k</td>
+              </tr>
+              <tr>
+                <td><strong>Delta Corp</strong></td>
+                <td><span class="tag t-blue">📞 Em Contato</span></td>
+                <td><span class="tag t-yellow">🟡 Média</span></td>
+                <td>➡️ Estável</td>
+                <td>R$320k</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="n-cards">
+            <div class="n-card">
+              <div class="n-card-l">Pipeline</div>
+              <div class="n-card-v">R$1.17M</div>
+              <div class="n-card-s">4 contas ativas</div>
+            </div>
+            <div class="n-card">
+              <div class="n-card-l">🔴 Alta Prior.</div>
+              <div class="n-card-v">2 contas</div>
+              <div class="n-card-s"><span class="ai-badge">✦ AI</span> automático</div>
+            </div>
+            <div class="n-card">
+              <div class="n-card-l">🧊 Esfriando</div>
+              <div class="n-card-v">1 conta</div>
+              <div class="n-card-s">Agir hoje</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     UPGRADE FREE SECTION
+════════════════════════════════════════ -->
+<section class="upgrade-section">
+  <div class="upgrade-inner">
+    <div class="upgrade-copy">
+      <div class="section-label">Bônus exclusivo</div>
+      <h2>Upgrade gratuito para o <em>Notion Business AI</em></h2>
+      <p>As 9 features de AI do template exigem o Notion Business AI. Por isso estamos incluindo o upgrade gratuitamente para quem baixar agora. Sem pegadinha, sem cobrança automática.</p>
+    </div>
+    <div class="upgrade-card">
+      <div class="upgrade-card-header">
+        <div class="upgrade-notion-logo">N</div>
+        <div>
+          <div class="upgrade-card-title">Notion Business AI</div>
+          <div class="upgrade-card-sub">Incluído gratuitamente</div>
+        </div>
+      </div>
+      <div class="upgrade-items">
+        <div class="upgrade-item">
+          <div class="upgrade-check">✓</div>
+          AI Autofill em databases — preenche campos automaticamente
+        </div>
+        <div class="upgrade-item">
+          <div class="upgrade-check">✓</div>
+          AI Blocks personalizados com prompts por página
+        </div>
+        <div class="upgrade-item">
+          <div class="upgrade-check">✓</div>
+          Notion Agents — automações agendadas com AI
+        </div>
+        <div class="upgrade-item">
+          <div class="upgrade-check">✓</div>
+          AI Meeting Notes e Enterprise Search
+        </div>
+      </div>
+      <div class="upgrade-divider"></div>
+      <div class="upgrade-disclaimer"><strong>✓ Sem cobrança automática.</strong> Você ativa o upgrade quando quiser, sem compromisso de continuidade.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     FEATURES COM MOCKUPS
+════════════════════════════════════════ -->
+<section class="section" id="features">
+  <div class="section-label">Como funciona</div>
+  <div class="section-title">Cada feature resolve<br>uma dor <em>real</em> de ABM.</div>
+  <p class="section-sub">Não é template com AI de enfeite. Cada camada foi projetada para um momento específico do processo — da pesquisa ao fechamento.</p>
+
+  <!-- Feature 1: Dashboard -->
+  <div class="feature-block">
+    <div class="feature-copy">
+      <span class="feature-tag">Dashboard · Notion Agent</span>
+      <h3 class="feature-h">Sua semana organizada antes de você abrir o computador.</h3>
+      <p class="feature-p">Todo Monday 8h, o Notion Agent varre todas as suas contas e monta o briefing da semana: quem é prioridade, quem está esfriando, o que está vencido.</p>
+      <div class="feature-list">
+        <div class="feature-item">Top 3 contas para focar — definido por AI</div>
+        <div class="feature-item">Alertas de contas esfriando com sugestão de ação</div>
+        <div class="feature-item">Próximos passos vencidos com responsável</div>
+        <div class="feature-item">Overview do pipeline por stage e valor</div>
+      </div>
+    </div>
+    <div class="mini-mockup">
+      <div class="mini-chrome">
+        <div class="mini-dots"><div class="mini-dot r"></div><div class="mini-dot y"></div><div class="mini-dot g"></div></div>
+        <span style="font-size:10px;color:var(--gray-3);margin-left:6px;">🏠 Dashboard — Weekly Focus</span>
+      </div>
+      <div class="mini-body">
+        <div class="dash-header">
+          <div class="dash-title">🏠 Dashboard</div>
+          <div class="dash-sub">Semana de 10/03 · Gerado pelo Notion Agent às 08:00</div>
+        </div>
+        <div class="dash-grid">
+          <div class="dash-card alert">
+            <div class="dash-card-l">🔴 Alta Prior.</div>
+            <div class="dash-card-v">2</div>
+            <div class="dash-card-s">contas pra focar</div>
+          </div>
+          <div class="dash-card alert">
+            <div class="dash-card-l">🧊 Esfriando</div>
+            <div class="dash-card-v">1</div>
+            <div class="dash-card-s">ação necessária</div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-l">Pipeline</div>
+            <div class="dash-card-v">R$1.17M</div>
+            <div class="dash-card-s">4 contas ativas</div>
+          </div>
+        </div>
+        <div class="dash-list">
+          <div class="dash-row">
+            <div class="dash-row-left">
+              <div class="dash-row-name">🎯 Empresa Alpha</div>
+              <div class="dash-row-sub">Negociação · R$480k · 2 dias s/ contato</div>
+            </div>
+            <div class="dash-row-right"><span class="tag t-red">🔴 Alta</span><span style="font-size:11px;">🔥</span></div>
+          </div>
+          <div class="dash-row">
+            <div class="dash-row-left">
+              <div class="dash-row-name">⚠️ Gama Industries</div>
+              <div class="dash-row-sub">Proposta · R$150k · 15 dias s/ contato</div>
+            </div>
+            <div class="dash-row-right"><span class="tag t-yellow">🟡 Média</span><span style="font-size:11px;">🧊</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 2: Stakeholders -->
+  <div class="feature-block reverse">
+    <div class="feature-copy">
+      <span class="feature-tag">Stakeholders · Mapa de Poder</span>
+      <h3 class="feature-h">Pare de vender para a empresa. Venda para as pessoas certas.</h3>
+      <p class="feature-p">Em ABM, a venda é feita para um comitê — não para um único contato. Mapear quem é quem dentro da conta é o que separa founder que fecha de founder que enrola.</p>
+      <div class="feature-list">
+        <div class="feature-item">Decisor, Influenciador, Bloqueador, Champion e Usuário</div>
+        <div class="feature-item">O que cada pessoa quer ouvir — campo dedicado</div>
+        <div class="feature-item">Nível de relacionamento: 🧊 Frio / 🌡️ Morno / 🔥 Quente</div>
+        <div class="feature-item">Relacionado a cada conta automaticamente</div>
+      </div>
+    </div>
+    <div class="mini-mockup">
+      <div class="mini-chrome">
+        <div class="mini-dots"><div class="mini-dot r"></div><div class="mini-dot y"></div><div class="mini-dot g"></div></div>
+        <span style="font-size:10px;color:var(--gray-3);margin-left:6px;">👥 Stakeholders · Empresa Alpha</span>
+      </div>
+      <div class="mini-body">
+        <div class="dash-title" style="margin-bottom:14px;">👥 Mapa de Poder</div>
+        <div class="stk-list">
+          <div class="stk-item">
+            <div class="stk-avatar">👔</div>
+            <div class="stk-info">
+              <div class="stk-name">Ricardo Mendes</div>
+              <div class="stk-role">CEO · quer ouvir: ROI e eficiência operacional</div>
+            </div>
+            <div class="stk-right">
+              <span class="tag t-red">🎯 Decisor</span>
+              <span class="tag t-orange">🔥 Quente</span>
+            </div>
+          </div>
+          <div class="stk-item">
+            <div class="stk-avatar">💼</div>
+            <div class="stk-info">
+              <div class="stk-name">Carla Souza</div>
+              <div class="stk-role">Head de Vendas · preocupada com adoção do time</div>
+            </div>
+            <div class="stk-right">
+              <span class="tag t-purple">🏆 Champion</span>
+              <span class="tag t-orange">🔥 Quente</span>
+            </div>
+          </div>
+          <div class="stk-item">
+            <div class="stk-avatar">🔒</div>
+            <div class="stk-info">
+              <div class="stk-name">Bruno TI</div>
+              <div class="stk-role">IT Manager · preocupado com segurança dos dados</div>
+            </div>
+            <div class="stk-right">
+              <span class="tag t-orange">🚧 Bloqueador</span>
+              <span class="tag t-gray">🧊 Frio</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 3: AI Briefing -->
+  <div class="feature-block">
+    <div class="feature-copy">
+      <span class="feature-tag">AI Blocks · Inteligência em tempo real</span>
+      <h3 class="feature-h">Da pesquisa ao briefing em segundos. A AI trabalha enquanto você foca em vender.</h3>
+      <p class="feature-p">Cada página de conta tem 5 AI Blocks prontos. Um clique gera o ângulo de entrada, o briefing pré-call, o pre-mortem do deal e a análise de concorrentes.</p>
+      <div class="feature-list">
+        <div class="feature-item">Ângulo de entrada personalizado por setor e decisor</div>
+        <div class="feature-item">Briefing pré-call em 5 linhas — tudo que você precisa saber</div>
+        <div class="feature-item">Pre-mortem: os 3 maiores riscos do deal antes de acontecerem</div>
+        <div class="feature-item">Win/Loss automático ao fechar cada deal</div>
+      </div>
+    </div>
+    <div class="mini-mockup">
+      <div class="mini-chrome">
+        <div class="mini-dots"><div class="mini-dot r"></div><div class="mini-dot y"></div><div class="mini-dot g"></div></div>
+        <span style="font-size:10px;color:var(--gray-3);margin-left:6px;">🏢 Empresa Alpha · AI Features</span>
+      </div>
+      <div class="mini-body">
+        <div class="briefing-box">
+          <div class="briefing-label">✦ AI · Briefing Pré-Call</div>
+          <div class="briefing-text">Empresa Alpha (SaaS, 51-200 pessoas) está em negociação há 3 semanas. Decisor Ricardo Mendes foca em ROI. Objeção de preço levantada na última call — comparando com concorrente B. Champion Carla está alinhada. Próximo passo: enviar case de sucesso do setor até quinta.</div>
+        </div>
+        <div class="briefing-box">
+          <div class="briefing-label">✦ AI · Ângulo de Entrada</div>
+          <div class="briefing-text"><strong>Gancho:</strong> "Empresas SaaS com 50+ vendedores perdem em média 23% do ciclo em handoffs internos." <strong>CTA:</strong> "Posso te mostrar como 3 empresas do seu porte reduziram isso em 60 dias?"</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <div class="briefing-btn">📋 Briefing Pré-Call</div>
+          <div class="briefing-btn" style="background:var(--off);color:var(--accent);border:1px solid var(--accent-mid);">⚠️ Pre-Mortem</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     AI GRID
+════════════════════════════════════════ -->
+<section class="section" style="padding-top:60px;">
+  <div class="section-label">9 AI Features</div>
+  <div class="section-title" style="margin-bottom:40px;">Nenhuma é enfeite.</div>
+  <div class="ai-grid">
+    <div class="ai-card"><div class="ai-num">01</div><div class="ai-title">AI Autofill — Perfil da Conta</div><p class="ai-desc">Cola o site. A AI preenche setor, tamanho e dores. Zero pesquisa manual.</p><span class="ai-tag">Autofill</span></div>
+    <div class="ai-card"><div class="ai-num">02</div><div class="ai-title">Score de Prioridade</div><p class="ai-desc">Classifica automaticamente: 🔴 Alta / 🟡 Média / 🟢 Baixa — com justificativa.</p><span class="ai-tag">Autofill</span></div>
+    <div class="ai-card"><div class="ai-num">03</div><div class="ai-title">Deal Momentum Score</div><p class="ai-desc">🔥 Acelerando / ➡️ Estável / 🧊 Esfriando. Você vê quem está escapando.</p><span class="ai-tag">Autofill</span></div>
+    <div class="ai-card"><div class="ai-num">04</div><div class="ai-title">Gerador de Ângulo de Entrada</div><p class="ai-desc">Botão na conta. Escreve abordagem ideal com gancho, dor e CTA.</p><span class="ai-tag">AI Block</span></div>
+    <div class="ai-card"><div class="ai-num">05</div><div class="ai-title">Briefing Pré-Call</div><p class="ai-desc">Histórico, stakeholders, objeções e próximo passo em 5 linhas.</p><span class="ai-tag">AI Block</span></div>
+    <div class="ai-card"><div class="ai-num">06</div><div class="ai-title">Pre-Mortem do Deal</div><p class="ai-desc">3 riscos que podem matar o deal — com ação preventiva para cada um.</p><span class="ai-tag">AI Block</span></div>
+    <div class="ai-card"><div class="ai-num">07</div><div class="ai-title">Competitor Intelligence</div><p class="ai-desc">Registra concorrentes. AI lista argumentos deles e como reposicionar.</p><span class="ai-tag">AI Block</span></div>
+    <div class="ai-card"><div class="ai-num">08</div><div class="ai-title">Análise Win/Loss</div><p class="ai-desc">Deal fechado? AI gera o que foi decisivo e o que aprender.</p><span class="ai-tag">AI Block</span></div>
+    <div class="ai-card"><div class="ai-num">09</div><div class="ai-title">Weekly Review Agent</div><p class="ai-desc">Todo Monday 8h: prioridades, alertas e overview do pipeline — automático.</p><span class="ai-tag">Notion Agent</span></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CTA FINAL
+════════════════════════════════════════ -->
+<section class="cta-section">
+  <h2>Pare de perder deals<br>por <em>falta de contexto.</em></h2>
+  <p>Duplicate. Preencha sua primeira conta. Veja a AI trabalhar.</p>
+  <button class="btn-main" onclick="openModal()" style="font-size:14px;padding:15px 36px;">Pegar o ABM War Room grátis →</button>
+</section>
+
+<footer>
+  <div>ABM War Room · Notion Template · Powered by Notion AI</div>
+  <div>Feito para founders e gestores B2B que jogam pra fechar.</div>
+</footer>
+
+<script>
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+function selectRadio(val) {
+  document.getElementById('radio-sim').classList.remove('selected');
+  document.getElementById('radio-nao').classList.remove('selected');
+  document.getElementById('radio-' + val).classList.add('selected');
+}
+
+async function submitForm() {
+  const name = document.getElementById('inputName').value.trim();
+  const company = document.getElementById('inputCompany').value.trim();
+  const email = document.getElementById('inputEmail').value.trim();
+  const upgradeEl = document.querySelector('.radio-option.selected input');
+  const upgrade = upgradeEl ? upgradeEl.value : 'nao respondeu';
+
+  if (!name || !company || !email) {
+    alert('Por favor, preencha todos os campos.');
+    return;
+  }
+
+  const btn = document.querySelector('.btn-submit');
+  btn.textContent = 'Enviando...';
+  btn.disabled = true;
+
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbw7aK2tvEIlKE3A5ZrqP0s-iYQw1iL6ALh7Hdn13pfHrmJNWtok8k7jLFWVD3f6GwY/exec';
+
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: name, empresa: company, email: email, upgrade: upgrade })
+    });
+  } catch (err) {
+    console.warn('Sheets webhook error:', err);
+  }
+
+  document.getElementById('modalForm').classList.add('hide');
+  document.getElementById('modalSuccess').classList.add('show');
+}
+</script>
+</body>
+</html>
