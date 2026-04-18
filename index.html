@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABM War Room — A camada de priorização que falta entre o CRM e o time.</title>
+<meta name="description" content="Co-pilot de ABM em Notion. Scoring por IA, alertas de momentum e mapa de stakeholders para founders e gestores B2B que pararam de aceitar 21% de win rate.">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  /* Paleta: preto editorial + branco + laranja brand + cinzas frios (não warm) */
+  --ink: #0a0a0a;
+  --paper: #ffffff;
+  --rule: #e7e7e7;
+  --mute: #8a8a8a;
+  --muted-ink: #4a4a4a;
+  --bg-soft: #f6f6f4;
+  --accent: #ff4f11;
+  --accent-hover: #e53f00;
+  --accent-soft: #fff2ed;
+  --ok: #15803d;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Geist', sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+::selection { background: var(--ink); color: var(--accent); }
+
+/* Utility */
+.mono { font-family: 'Geist Mono', monospace; font-variant-numeric: tabular-nums; }
+.serif { font-family: 'Instrument Serif', serif; }
+.italic-accent { font-style: italic; color: var(--accent); }
+
+/* ══════════════════════════════════════════
+   MODAL (mantido funcional, visual refinado)
+   ══════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,10,10,0.6);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+  padding: 20px;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--paper);
+  padding: 52px 48px;
+  width: 100%;
+  max-width: 460px;
+  border: 1px solid var(--ink);
+  transform: translateY(12px);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  position: relative;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-close {
+  position: absolute; top: 18px; right: 18px;
+  width: 32px; height: 32px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--muted-ink);
+  transition: all 0.15s;
+}
+.modal-close:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.modal-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px; font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.modal h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 32px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.modal-sub {
+  font-size: 13.5px;
+  color: var(--muted-ink);
+  line-height: 1.65;
+  margin-bottom: 28px;
+}
+.modal-sub strong { color: var(--ink); font-weight: 500; }
+
+.upgrade-note {
+  border-left: 2px solid var(--accent);
+  padding: 2px 0 2px 14px;
+  margin-bottom: 28px;
+  font-size: 12px;
+  color: var(--muted-ink);
+  line-height: 1.55;
+}
+.upgrade-note strong { color: var(--ink); font-weight: 500; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.form-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px; font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.form-input {
+  border: none;
+  border-bottom: 1.5px solid var(--rule);
+  padding: 8px 0 10px;
+  font-family: 'Geist', sans-serif;
+  font-size: 15px;
+  color: var(--ink);
+  background: transparent;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.form-input:focus { border-color: var(--ink); }
+.form-input::placeholder { color: var(--mute); font-weight: 300; }
+
+.radio-group { display: flex; gap: 8px; margin-top: 4px; }
+.radio-option {
+  flex: 1;
+  border: 1px solid var(--rule);
+  padding: 11px 14px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 9px;
+  font-size: 13px;
+  color: var(--muted-ink);
+  transition: all 0.15s;
+  user-select: none;
+}
+.radio-option:hover { border-color: var(--ink); color: var(--ink); }
+.radio-option.selected {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+.radio-option input { display: none; }
+.radio-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.radio-option.selected .radio-dot::after {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.btn-submit {
+  width: 100%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 15px;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+  letter-spacing: 0.01em;
+  transition: background 0.15s;
+}
+.btn-submit:hover { background: var(--accent); }
+
+.form-disclaimer {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  color: var(--mute);
+  text-align: center;
+  margin-top: 14px;
+  letter-spacing: 0.04em;
+}
+
+.modal-success {
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 0;
+}
+.modal-success.show { display: flex; }
+.modal-form.hide { display: none; }
+.modal-success h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 32px;
+  line-height: 1.1;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.modal-success p {
+  font-size: 14px;
+  color: var(--muted-ink);
+  line-height: 1.65;
+  margin-bottom: 28px;
+}
+.success-mark {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+/* ══════════════════════════════════════════
+   NAV
+   ══════════════════════════════════════════ */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 48px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+  position: sticky; top: 0;
+  z-index: 50;
+}
+
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.logo-mark {
+  width: 18px; height: 18px;
+  background: var(--accent);
+  position: relative;
+}
+.logo-mark::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: var(--ink);
+}
+
+.nav-right {
+  display: flex; align-items: center;
+  gap: 28px;
+}
+.nav-meta {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: 0.06em;
+  color: var(--mute);
+  text-transform: uppercase;
+}
+.nav-cta {
+  background: transparent;
+  color: var(--ink);
+  font-family: 'Geist', sans-serif;
+  font-size: 13px; font-weight: 500;
+  padding: 9px 18px;
+  border: 1px solid var(--ink);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-cta:hover { background: var(--ink); color: var(--paper); }
+
+/* ══════════════════════════════════════════
+   HERO — mockup entra pela direita, cortado
+   ══════════════════════════════════════════ */
+.hero {
+  padding: 56px 0 0 48px;
+  position: relative;
+  border-bottom: 1px solid var(--rule);
+  overflow: hidden;
+}
+
+/* Badge estilo "Backed by YC" */
+.badge-49 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px 7px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  margin-bottom: 36px;
+  transition: all 0.15s;
+  cursor: default;
+  width: fit-content;
+}
+.badge-49:hover { border-color: var(--accent); }
+.badge-49-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  background: var(--accent);
+  color: var(--paper);
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.badge-49-text {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--muted-ink);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.badge-49-text strong { color: var(--ink); font-weight: 500; }
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(440px, 1fr) minmax(560px, 1.2fr);
+  gap: 0;
+  align-items: center;
+  min-height: 600px;
+}
+
+.hero-left {
+  padding: 64px 48px 64px 0;
+}
+
+.hero-h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(48px, 5.8vw, 80px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  margin-bottom: 24px;
+  font-weight: 400;
+}
+.hero-h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.hero-sub {
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: var(--muted-ink);
+  margin-bottom: 36px;
+  max-width: 460px;
+  font-weight: 400;
+}
+.hero-sub strong { color: var(--ink); font-weight: 500; }
+
+.hero-cta-row {
+  display: flex; align-items: center; gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* HERO RIGHT — mockup cortado pela borda direita */
+.hero-right {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 48px 0;
+}
+.hero-mockup-preview {
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06);
+  width: 118%;
+  max-width: none;
+  transform: translateX(3%);
+  animation: slideInRight 0.9s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(10%); }
+  to { opacity: 1; transform: translateX(3%); }
+}
+
+.btn-main {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Geist', sans-serif;
+  font-size: 14px; font-weight: 500;
+  padding: 15px 28px;
+  border: 1px solid var(--ink);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.btn-main:hover { background: var(--accent); border-color: var(--accent); }
+.btn-main .arrow { transition: transform 0.2s; }
+.btn-main:hover .arrow { transform: translateX(3px); }
+
+.btn-ghost {
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px;
+  color: var(--muted-ink);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 2px;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { color: var(--ink); border-color: var(--ink); }
+
+.hero-meta {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--mute);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ══════════════════════════════════════════
+   SECTION HEADING SYSTEM
+   ══════════════════════════════════════════ */
+.section {
+  padding: 120px 48px;
+  border-bottom: 1px solid var(--rule);
+  position: relative;
+}
+
+.section-hed {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 32px;
+  margin-bottom: 80px;
+  align-items: baseline;
+}
+
+.section-num {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.section-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(40px, 4.5vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+  max-width: 900px;
+}
+.section-title em { font-style: italic; color: var(--accent); }
+
+.section-deck {
+  font-size: 16px;
+  color: var(--muted-ink);
+  line-height: 1.6;
+  max-width: 560px;
+  margin-top: 20px;
+}
+
+/* ══════════════════════════════════════════
+   THESIS SECTION (a matemática do problema)
+   ══════════════════════════════════════════ */
+.thesis {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 120px 48px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.thesis-inner {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 32px;
+}
+
+.thesis-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.thesis-body {
+  max-width: 800px;
+}
+.thesis-lede {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(32px, 3.8vw, 52px);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-weight: 400;
+  margin-bottom: 48px;
+  color: var(--paper);
+}
+.thesis-lede em { font-style: italic; color: var(--accent); }
+
+.thesis-proof {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  padding: 32px 0;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  margin-bottom: 32px;
+}
+.proof-block .proof-pct {
+  font-family: 'Instrument Serif', serif;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--accent);
+  font-style: italic;
+  margin-bottom: 10px;
+}
+.proof-block .proof-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.75);
+}
+.proof-block .proof-text strong { color: var(--paper); font-weight: 500; }
+.proof-block .proof-source {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  color: var(--mute);
+  letter-spacing: 0.04em;
+  margin-top: 12px;
+}
+
+.thesis-kicker {
+  font-family: 'Instrument Serif', serif;
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--paper);
+  font-style: italic;
+}
+.thesis-kicker .hi { color: var(--accent); font-style: normal; font-weight: 400; }
+
+/* ══════════════════════════════════════════
+   FEATURES (editorial articles)
+   ══════════════════════════════════════════ */
+.feature {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  padding: 100px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.feature:last-of-type { border-bottom: none; }
+.feature.reverse { direction: rtl; }
+.feature.reverse > * { direction: ltr; }
+
+.feature-copy { max-width: 500px; }
+.feature-tag {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.feature-tag::before {
+  content: '';
+  width: 16px; height: 1px;
+  background: var(--accent);
+}
+
+.feature-h {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(28px, 3.2vw, 42px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  margin-bottom: 18px;
+  font-weight: 400;
+}
+.feature-h em { font-style: italic; color: var(--accent); }
+
+.feature-p {
+  font-size: 15.5px;
+  color: var(--muted-ink);
+  line-height: 1.65;
+  margin-bottom: 28px;
+}
+
+.feature-list { display: flex; flex-direction: column; gap: 14px; }
+.feature-item {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 14px;
+  font-size: 14px;
+  color: var(--muted-ink);
+  line-height: 1.55;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+.feature-item:first-child { padding-top: 0; border-top: none; }
+.feature-item-num {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  padding-top: 2px;
+}
+
+/* ══════════════════════════════════════════
+   MOCKUPS (depurados — sem warm off-white)
+   ══════════════════════════════════════════ */
+.mockup-wrap {
+  position: relative;
+}
+
+.mockup {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 20px 60px rgba(0,0,0,0.08);
+  transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+
+.mockup-chrome {
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--rule);
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.chrome-dots { display:flex; gap:5px; }
+.chrome-dot { width:9px; height:9px; border-radius:50%; }
+.chrome-dot.r { background:#ff5f57; }
+.chrome-dot.y { background:#febc2e; }
+.chrome-dot.g { background:#28c840; }
+.chrome-url {
+  flex: 1;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 3px 10px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  color: var(--mute);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* Hero big mockup */
+.hero-mockup-wrap {
+  margin-top: 80px;
+  padding: 0 48px;
+}
+
+.hero-mockup {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.12);
+}
+
+.notion-app {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  height: 460px;
+}
+
+.n-sidebar {
+  background: var(--bg-soft);
+  border-right: 1px solid var(--rule);
+  padding: 14px 10px;
+}
+.n-ws { display:flex; align-items:center; gap:9px; padding: 6px 8px; margin-bottom: 14px; }
+.n-ws-icon {
+  width: 22px; height: 22px;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.n-ws-icon::after {
+  content:'';
+  position:absolute; inset: 5px;
+  background: var(--accent);
+}
+.n-ws-name {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.n-section {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; font-weight: 500;
+  color: var(--mute);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 14px 8px 6px;
+}
+.n-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  color: var(--muted-ink);
+  transition: background 0.12s;
+}
+.n-item.active { background: rgba(0,0,0,0.06); color: var(--ink); font-weight: 500; }
+.n-item:hover { background: rgba(0,0,0,0.03); }
+.n-icon { font-size: 13px; flex-shrink: 0; width: 14px; text-align: center; }
+
+.n-main { padding: 28px 32px; background: var(--paper); overflow: hidden; }
+.n-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.n-desc {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--mute);
+  letter-spacing: 0.04em;
+  margin-bottom: 20px;
+}
+
+.n-table { width:100%; border-collapse:collapse; font-size: 12px; }
+.n-table th {
+  background: var(--paper);
+  border-bottom: 1.5px solid var(--ink);
+  padding: 8px 10px;
+  text-align: left;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--muted-ink);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.n-table td {
+  border-bottom: 1px solid var(--rule);
+  padding: 10px;
+  color: var(--ink);
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+.n-table tr:hover td { background: var(--bg-soft); }
+
+.pill {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+}
+.pill.hi { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.pill.mid { color: #92400e; border-color: #f5d9a3; background: #fef8ec; }
+.pill.lo { color: var(--mute); border-color: var(--rule); background: var(--bg-soft); }
+.pill.neg { color: #1d4ed8; border-color: #cfdcf8; background: #f3f7fe; }
+.pill.pur { color: #6d28d9; border-color: #e0d5f5; background: #f6f2fd; }
+
+.momentum {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.momentum.up { color: var(--accent); }
+.momentum.flat { color: var(--muted-ink); }
+.momentum.down { color: var(--mute); }
+
+/* Mini mockups (features) */
+.mini-body { padding: 22px 24px; }
+
+/* Dashboard */
+.dash-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap: 10px; margin: 16px 0 18px; }
+.dash-card {
+  border: 1px solid var(--rule);
+  padding: 14px;
+}
+.dash-card.alert { border-color: var(--accent); }
+.dash-card-l {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9.5px; font-weight: 500;
+  color: var(--mute);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.dash-card-v {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.dash-card.alert .dash-card-v { color: var(--accent); }
+.dash-card-s {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--mute);
+  letter-spacing: 0.02em;
+  margin-top: 4px;
+}
+
+.dash-list { display:flex; flex-direction:column; }
+.dash-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+.dash-row:last-child { border-bottom: 1px solid var(--rule); }
+.dash-row-name { font-size: 12.5px; font-weight: 500; color: var(--ink); }
+.dash-row-sub {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  color: var(--mute);
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+.dash-row-right { display: flex; align-items: center; gap: 8px; }
+
+/* Stakeholders */
+.stk-list { display:flex; flex-direction:column; }
+.stk-item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+  align-items: center;
+}
+.stk-item:last-child { border-bottom: 1px solid var(--rule); }
+.stk-avatar {
+  width: 32px; height: 32px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Instrument Serif', serif;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.stk-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+.stk-role {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  color: var(--mute);
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+.stk-pills { display: flex; gap: 6px; }
+
+/* AI Briefing */
+.briefing-box {
+  border-left: 2px solid var(--accent);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  background: var(--bg-soft);
+}
+.briefing-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; font-weight: 500;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.briefing-text {
+  font-size: 12.5px;
+  color: var(--muted-ink);
+  line-height: 1.65;
+}
+.briefing-text strong { color: var(--ink); font-weight: 500; }
+
+/* ══════════════════════════════════════════
+   AI INDEX (tabela editorial)
+   ══════════════════════════════════════════ */
+.ai-index {
+  border-top: 1.5px solid var(--ink);
+}
+.ai-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr 120px;
+  gap: 40px;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+  transition: background 0.15s;
+}
+.ai-row:hover { background: var(--bg-soft); padding-left: 12px; padding-right: 12px; }
+
+.ai-idx {
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.ai-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.ai-desc {
+  font-size: 13.5px;
+  color: var(--muted-ink);
+  line-height: 1.55;
+}
+.ai-kind {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+/* ══════════════════════════════════════════
+   FINAL CTA
+   ══════════════════════════════════════════ */
+.final-cta {
+  padding: 140px 48px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+}
+
+.final-cta-inner {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 32px;
+}
+.final-cta-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.final-cta h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(48px, 6vw, 88px);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  margin-bottom: 32px;
+  font-weight: 400;
+  max-width: 900px;
+}
+.final-cta h2 em { font-style: italic; color: var(--accent); }
+
+.final-cta p {
+  font-size: 17px;
+  color: var(--muted-ink);
+  line-height: 1.55;
+  margin-bottom: 40px;
+  max-width: 560px;
+}
+
+/* ══════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════ */
+footer {
+  padding: 36px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--mute);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+footer a { color: var(--muted-ink); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+/* ══════════════════════════════════════════
+   ENTRANCE ANIMATIONS (sparse, purposeful)
+   ══════════════════════════════════════════ */
+.fade-up { animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) both; }
+.fade-up.d1 { animation-delay: 0.08s; }
+.fade-up.d2 { animation-delay: 0.16s; }
+.fade-up.d3 { animation-delay: 0.24s; }
+.fade-up.d4 { animation-delay: 0.32s; }
+.fade-up.d5 { animation-delay: 0.40s; }
+.fade-up.d6 { animation-delay: 0.48s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .hero { padding: 56px 48px 0; }
+  .hero-grid { grid-template-columns: 1fr; min-height: auto; }
+  .hero-left { padding: 0 0 40px 0; }
+  .hero-right { padding: 0 0 48px 0; overflow: visible; }
+  .hero-mockup-preview { width: 100%; transform: translateX(0); box-shadow: 0 20px 60px rgba(0,0,0,0.1); }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .feature { grid-template-columns: 1fr; gap: 48px; padding: 72px 0; }
+  .feature.reverse { direction: ltr; }
+  .thesis-inner, .section-hed, .final-cta-inner { grid-template-columns: 1fr; gap: 16px; }
+  .ai-row { grid-template-columns: 40px 1fr 100px; gap: 20px; }
+  .ai-row .ai-desc { grid-column: 2 / 4; padding-top: 8px; }
+}
+
+@media (max-width: 640px) {
+  nav { padding: 18px 22px; }
+  .nav-meta { display: none; }
+  .hero { padding: 40px 22px 0; }
+  .section { padding: 80px 22px; }
+  .thesis { padding: 80px 22px; }
+  .final-cta { padding: 96px 22px; }
+  footer { padding: 28px 22px; flex-direction: column; gap: 10px; text-align: center; }
+  .thesis-proof { grid-template-columns: 1fr; gap: 32px; }
+  .notion-app { grid-template-columns: 1fr; height: auto; }
+  .n-sidebar { display: none; }
+  .n-table { font-size: 11px; }
+  .hero-h1 { font-size: 44px; }
+  .section-title { font-size: 36px; }
+  .modal { padding: 40px 28px; }
+  .ai-row { grid-template-columns: 1fr; gap: 8px; }
+  .ai-kind { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     MODAL
+     ═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()" aria-label="Fechar">×</button>
+
+    <div class="modal-form" id="modalForm">
+      <div class="modal-label">— Acesso gratuito</div>
+      <h2>Pegar o <em class="italic-accent">ABM War Room</em></h2>
+      <p class="modal-sub">Preencha abaixo e receba o template completo junto com o upgrade gratuito para o <strong>Notion Business AI</strong>.</p>
+
+      <div class="upgrade-note">
+        <strong>Notion Business AI incluso.</strong> As features de AI do template exigem esse plano. Sem cobrança automática.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input type="text" class="form-input" placeholder="João Silva" id="inputName">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Empresa</label>
+        <input type="text" class="form-input" placeholder="Empresa XPTO" id="inputCompany">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input type="email" class="form-input" placeholder="joao@empresa.com" id="inputEmail">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Aceita o upgrade gratuito?</label>
+        <div class="radio-group">
+          <label class="radio-option" id="radio-sim" onclick="selectRadio('sim')">
+            <input type="radio" name="upgrade" value="sim">
+            <div class="radio-dot"></div>
+            Sim
+          </label>
+          <label class="radio-option" id="radio-nao" onclick="selectRadio('nao')">
+            <input type="radio" name="upgrade" value="nao">
+            <div class="radio-dot"></div>
+            Não agora
+          </label>
+        </div>
+      </div>
+
+      <button class="btn-submit" onclick="submitForm()">Receber template →</button>
+      <p class="form-disclaimer">Dados seguros. Zero spam.</p>
+    </div>
+
+    <div class="modal-success" id="modalSuccess">
+      <div class="success-mark">— Confirmado</div>
+      <h3>Seu acesso está pronto.</h3>
+      <p>Abra o template abaixo e clique em <strong>"Duplicate"</strong> no canto superior direito para salvar no seu workspace.</p>
+      <a href="https://fog-fender-af0.notion.site/ABM-War-Room-3214fc7ea0c881ac809de9ab3a373939" target="_blank" class="btn-submit" style="display:block;text-decoration:none;text-align:center;">
+        Abrir ABM War Room no Notion →
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     NAV
+     ═══════════════════════════════════════════ -->
+<nav>
+  <div class="nav-logo">
+    <div class="logo-mark"></div>
+    ABM&nbsp;WAR&nbsp;ROOM
+  </div>
+  <div class="nav-right">
+    <span class="nav-meta">Notion Template / AI-Powered</span>
+    <button class="nav-cta" onclick="openModal()">Acessar template</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-left">
+
+      <div class="badge-49 fade-up">
+        <span class="badge-49-mark">49</span>
+        <span class="badge-49-text">A <strong>49er</strong> product</span>
+      </div>
+
+      <h1 class="hero-h1 fade-up d1">
+        Co-pilot para quem<br>vende B2B <em>de verdade.</em>
+      </h1>
+      <p class="hero-sub fade-up d2">
+        A camada de priorização entre o seu CRM e o seu time — onde o head comercial responde <strong>"onde agir agora e por quê"</strong> sem abrir 4 ferramentas.
+      </p>
+
+      <div class="hero-cta-row fade-up d3">
+        <button class="btn-main" onclick="openModal()">
+          Pegar o template grátis <span class="arrow">→</span>
+        </button>
+      </div>
+
+      <div class="hero-meta fade-up d4">Notion Business AI incluso / Sem cobrança automática</div>
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-mockup-preview">
+        <div class="mockup-chrome">
+          <div class="chrome-dots">
+            <div class="chrome-dot r"></div>
+            <div class="chrome-dot y"></div>
+            <div class="chrome-dot g"></div>
+          </div>
+          <div class="chrome-url">notion.so / abm-war-room / accounts</div>
+        </div>
+        <div class="notion-app">
+          <div class="n-sidebar">
+            <div class="n-ws">
+              <div class="n-ws-icon"></div>
+              <div class="n-ws-name">ABM War Room</div>
+            </div>
+            <div class="n-section">Workspace</div>
+            <div class="n-item active"><span class="n-icon">□</span> Accounts</div>
+            <div class="n-item"><span class="n-icon">◇</span> Dashboard</div>
+            <div class="n-item"><span class="n-icon">○</span> Stakeholders</div>
+            <div class="n-item"><span class="n-icon">△</span> Touchpoints</div>
+            <div class="n-item"><span class="n-icon">▷</span> Playbook</div>
+            <div class="n-item"><span class="n-icon">✦</span> AI Setup</div>
+          </div>
+          <div class="n-main">
+            <div class="n-title">Accounts</div>
+            <div class="n-desc">7 contas / Score AI / Alta prioridade primeiro</div>
+            <table class="n-table">
+              <thead>
+                <tr>
+                  <th>Conta</th>
+                  <th>Stage</th>
+                  <th>Score AI</th>
+                  <th>Momentum</th>
+                  <th>Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Empresa Alpha</strong></td>
+                  <td><span class="pill pur">Negociação</span></td>
+                  <td><span class="pill hi">Alta</span></td>
+                  <td><span class="momentum up">↑ Acelerando</span></td>
+                  <td class="mono">R$ 480k</td>
+                </tr>
+                <tr>
+                  <td><strong>Beta Soluções</strong></td>
+                  <td><span class="pill mid">Proposta</span></td>
+                  <td><span class="pill hi">Alta</span></td>
+                  <td><span class="momentum flat">→ Estável</span></td>
+                  <td class="mono">R$ 320k</td>
+                </tr>
+                <tr>
+                  <td><strong>Gama Industries</strong></td>
+                  <td><span class="pill mid">Proposta</span></td>
+                  <td><span class="pill mid">Média</span></td>
+                  <td><span class="momentum down">↓ Esfriando</span></td>
+                  <td class="mono">R$ 150k</td>
+                </tr>
+                <tr>
+                  <td><strong>Delta Corp</strong></td>
+                  <td><span class="pill neg">Em Contato</span></td>
+                  <td><span class="pill mid">Média</span></td>
+                  <td><span class="momentum flat">→ Estável</span></td>
+                  <td class="mono">R$ 220k</td>
+                </tr>
+                <tr>
+                  <td><strong>Epsilon Tech</strong></td>
+                  <td><span class="pill neg">Em Contato</span></td>
+                  <td><span class="pill lo">Baixa</span></td>
+                  <td><span class="momentum down">↓ Esfriando</span></td>
+                  <td class="mono">R$ 90k</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     THESIS
+     ═══════════════════════════════════════════ -->
+<section class="thesis">
+  <div class="thesis-inner">
+    <div class="thesis-label">§ 01 / A tese</div>
+    <div class="thesis-body">
+      <p class="thesis-lede">
+        ABM existe desde 2004. Toda liderança comercial sabe.<br>
+        Mas executar exige <em>infraestrutura de decisão</em> que o stack padrão não entrega.
+      </p>
+
+      <div class="thesis-proof">
+        <div class="proof-block">
+          <div class="proof-pct">21%</div>
+          <p class="proof-text">Win rate B2B médio. <strong>79% dos deals que entram no pipeline não fecham</strong> — e ninguém mede quais estavam condenados desde a primeira semana.</p>
+          <p class="proof-source mono">Outreach Benchmarks 2025</p>
+        </div>
+        <div class="proof-block">
+          <div class="proof-pct">29%</div>
+          <p class="proof-text">Do tempo dos SDRs vai pra vender. <strong>71% vai pra CRM, admin, prep, reuniões internas</strong> — tempo gasto em conta que frequentemente já está morta.</p>
+          <p class="proof-source mono">Salesforce State of Sales 2024 / 6th ed., 5.500 respondentes</p>
+        </div>
+      </div>
+
+      <p class="thesis-kicker">
+        Cadência mata a conta ruim devagar.<br>
+        <span class="hi">Priorização mata ela no primeiro dia.</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FEATURES
+     ═══════════════════════════════════════════ -->
+<section class="section" id="features">
+  <div class="section-hed">
+    <span class="section-num">§ 02 / O sistema</span>
+    <div>
+      <h2 class="section-title">
+        Três camadas que separam <em>time que executa ABM</em><br>
+        de time que só diz que executa.
+      </h2>
+      <p class="section-deck">
+        A diferença não é intenção, é infraestrutura. Scoring que pensa antes de você. Stakeholders que não somem no CRM. Briefing que chega pronto na segunda-feira.
+      </p>
+    </div>
+  </div>
+
+  <!-- Feature 1 : Dashboard -->
+  <div class="feature">
+    <div class="feature-copy">
+      <span class="feature-tag">Dashboard / AI-Powered</span>
+      <h3 class="feature-h">
+        Onde agir agora, <em>com justificativa.</em>
+      </h3>
+      <p class="feature-p">
+        O primeiro reflexo na segunda-feira é abrir o CRM e ver uma lista longa sem hierarquia. O dashboard inverte: começa pelas 5 contas que exigem ação hoje, já pontuadas por IA, com o motivo junto.
+      </p>
+      <div class="feature-list">
+        <div class="feature-item">
+          <span class="feature-item-num">01</span>
+          <div>Priorização automática das contas com maior chance de conversão nos próximos 14 dias</div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-item-num">02</span>
+          <div>Alertas de momentum: quem esfriou, quem acelerou, quem está a um toque de fechar</div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-item-num">03</span>
+          <div>Pipeline em tempo real, com valor e estágio reais — não os que o SDR arrastou no Kanban</div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="mockup">
+        <div class="mockup-chrome">
+          <div class="chrome-dots"><div class="chrome-dot r"></div><div class="chrome-dot y"></div><div class="chrome-dot g"></div></div>
+          <span class="chrome-url">dashboard</span>
+        </div>
+        <div class="mini-body">
+          <div class="n-title" style="font-size:20px;">Esta Semana</div>
+          <div class="dash-grid">
+            <div class="dash-card alert">
+              <div class="dash-card-l">Alta Prioridade</div>
+              <div class="dash-card-v">3</div>
+              <div class="dash-card-s mono">ação hoje</div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-l">Esfriando</div>
+              <div class="dash-card-v">2</div>
+              <div class="dash-card-s mono">reativar</div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-l">Pipeline</div>
+              <div class="dash-card-v">1.17M</div>
+              <div class="dash-card-s mono">4 contas</div>
+            </div>
+          </div>
+          <div class="dash-list">
+            <div class="dash-row">
+              <div>
+                <div class="dash-row-name">Empresa Alpha</div>
+                <div class="dash-row-sub">Negociação / R$ 480k / 2 dias s/ contato</div>
+              </div>
+              <div class="dash-row-right">
+                <span class="pill hi">Alta</span>
+                <span class="momentum up">↑</span>
+              </div>
+            </div>
+            <div class="dash-row">
+              <div>
+                <div class="dash-row-name">Gama Industries</div>
+                <div class="dash-row-sub">Proposta / R$ 150k / 15 dias s/ contato</div>
+              </div>
+              <div class="dash-row-right">
+                <span class="pill mid">Média</span>
+                <span class="momentum down">↓</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 2 : Stakeholders -->
+  <div class="feature reverse">
+    <div class="feature-copy">
+      <span class="feature-tag">Stakeholders / Mapa de Poder</span>
+      <h3 class="feature-h">
+        Pare de vender pra empresa.<br>
+        <em>Venda pras pessoas certas.</em>
+      </h3>
+      <p class="feature-p">
+        Em ABM, a venda acontece dentro de um comitê — não com um único contato. Mapear quem decide, quem influencia e quem bloqueia é o que separa founder que fecha de founder que enrola no mesmo deal por meses.
+      </p>
+      <div class="feature-list">
+        <div class="feature-item">
+          <span class="feature-item-num">01</span>
+          <div>Papéis: Decisor, Champion, Bloqueador, Influenciador, Usuário</div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-item-num">02</span>
+          <div>Campo dedicado: o que cada stakeholder quer ouvir (ROI, risco, adoção, preço)</div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-item-num">03</span>
+          <div>Nível de relação em três estados — frio / morno / quente — atualizado por toque real</div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="mockup">
+        <div class="mockup-chrome">
+          <div class="chrome-dots"><div class="chrome-dot r"></div><div class="chrome-dot y"></div><div class="chrome-dot g"></div></div>
+          <span class="chrome-url">stakeholders / empresa alpha</span>
+        </div>
+        <div class="mini-body">
+          <div class="n-title" style="font-size:20px;">Mapa de Poder</div>
+          <div class="n-desc">3 stakeholders mapeados / Empresa Alpha</div>
+          <div class="stk-list">
+            <div class="stk-item">
+              <div class="stk-avatar">R</div>
+              <div>
+                <div class="stk-name">Ricardo Mendes</div>
+                <div class="stk-role">CEO / quer ouvir: ROI e eficiência operacional</div>
+              </div>
+              <div class="stk-pills">
+                <span class="pill hi">Decisor</span>
+              </div>
+            </div>
+            <div class="stk-item">
+              <div class="stk-avatar">C</div>
+              <div>
+                <div class="stk-name">Carla Souza</div>
+                <div class="stk-role">Head de Vendas / preocupada com adoção do time</div>
+              </div>
+              <div class="stk-pills">
+                <span class="pill pur">Champion</span>
+              </div>
+            </div>
+            <div class="stk-item">
+              <div class="stk-avatar">B</div>
+              <div>
+                <div class="stk-name">Bruno Alves</div>
+                <div class="stk-role">IT Manager / preocupado com segurança dos dados</div>
+              </div>
+              <div class="stk-pills">
+                <span class="pill mid">Bloqueador</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 3 : AI Briefing -->
+  <div class="feature">
+    <div class="feature-copy">
+      <span class="feature-tag">AI Blocks / Tempo real</span>
+      <h3 class="feature-h">
+        Da pesquisa ao briefing <em>em segundos.</em>
+      </h3>
+      <p class="feature-p">
+        Cada página de conta tem 5 AI Blocks embutidos. Um clique e a IA gera o ângulo de entrada pro próximo contato, o briefing pré-call com tudo que você precisa lembrar, e o pre-mortem com os 3 riscos que podem matar o deal antes de acontecerem.
+      </p>
+      <div class="feature-list">
+        <div class="feature-item">
+          <span class="feature-item-num">01</span>
+          <div>Ângulo de entrada personalizado por setor, estágio e decisor</div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-item-num">02</span>
+          <div>Briefing pré-call em 5 linhas: histórico, objeções, stakeholders, próximo passo</div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-item-num">03</span>
+          <div>Pre-mortem: os riscos reais do deal antes da próxima reunião</div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="mockup">
+        <div class="mockup-chrome">
+          <div class="chrome-dots"><div class="chrome-dot r"></div><div class="chrome-dot y"></div><div class="chrome-dot g"></div></div>
+          <span class="chrome-url">empresa alpha / ai features</span>
+        </div>
+        <div class="mini-body">
+          <div class="briefing-box">
+            <div class="briefing-label">✦ AI / Briefing Pré-Call</div>
+            <div class="briefing-text">
+              Empresa Alpha (SaaS, 51-200 pessoas) está em negociação há 3 semanas. Decisor <strong>Ricardo Mendes</strong> foca em ROI. Objeção de preço levantada na última call — comparando com concorrente B. Champion Carla está alinhada. Próximo passo: enviar case de sucesso do setor até quinta.
+            </div>
+          </div>
+          <div class="briefing-box">
+            <div class="briefing-label">✦ AI / Ângulo de Entrada</div>
+            <div class="briefing-text">
+              <strong>Gancho:</strong> "Empresas SaaS com 50+ vendedores perdem em média 23% do ciclo em handoffs internos." <strong>CTA:</strong> "Posso te mostrar como 3 empresas do seu porte reduziram isso em 60 dias?"
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     AI INDEX
+     ═══════════════════════════════════════════ -->
+<section class="section" id="index">
+  <div class="section-hed">
+    <span class="section-num">§ 03 / O índice</span>
+    <div>
+      <h2 class="section-title">
+        9 AI features nativas.<br>
+        <em>Nenhuma é enfeite.</em>
+      </h2>
+    </div>
+  </div>
+
+  <div class="ai-index">
+    <div class="ai-row">
+      <div class="ai-idx">01</div>
+      <div class="ai-name">AI Autofill — Perfil da Conta</div>
+      <div class="ai-desc">Cola o site. A AI preenche setor, tamanho, dores e momento. Zero pesquisa manual.</div>
+      <div class="ai-kind">Autofill</div>
+    </div>
+    <div class="ai-row">
+      <div class="ai-idx">02</div>
+      <div class="ai-name">Score de Prioridade</div>
+      <div class="ai-desc">Classifica cada conta — Alta, Média, Baixa — com justificativa escrita pela IA.</div>
+      <div class="ai-kind">Autofill</div>
+    </div>
+    <div class="ai-row">
+      <div class="ai-idx">03</div>
+      <div class="ai-name">Deal Momentum Score</div>
+      <div class="ai-desc">Acelerando, Estável, Esfriando. Você vê quem está escapando antes que escape de fato.</div>
+      <div class="ai-kind">Autofill</div>
+    </div>
+    <div class="ai-row">
+      <div class="ai-idx">04</div>
+      <div class="ai-name">Gerador de Ângulo de Entrada</div>
+      <div class="ai-desc">Um clique na conta. Gera abordagem ideal com gancho, dor mapeada e CTA direto.</div>
+      <div class="ai-kind">AI Block</div>
+    </div>
+    <div class="ai-row">
+      <div class="ai-idx">05</div>
+      <div class="ai-name">Briefing Pré-Call</div>
+      <div class="ai-desc">Histórico, stakeholders, objeções em aberto e próximo passo, em 5 linhas.</div>
+      <div class="ai-kind">AI Block</div>
+    </div>
+    <div class="ai-row">
+      <div class="ai-idx">06</div>
+      <div class="ai-name">Pre-Mortem do Deal</div>
+      <div class="ai-desc">3 riscos que podem matar o deal — com ação preventiva para cada um.</div>
+      <div class="ai-kind">AI Block</div>
+    </div>
+    <div class="ai-row">
+      <div class="ai-idx">07</div>
+      <div class="ai-name">Competitor Intelligence</div>
+      <div class="ai-desc">Registra concorrentes da conta. A IA lista argumentos deles e como reposicionar.</div>
+      <div class="ai-kind">AI Block</div>
+    </div>
+    <div class="ai-row">
+      <div class="ai-idx">08</div>
+      <div class="ai-name">Análise Win / Loss</div>
+      <div class="ai-desc">Deal fechado ou perdido. A IA gera o que foi decisivo e o aprendizado replicável.</div>
+      <div class="ai-kind">AI Block</div>
+    </div>
+    <div class="ai-row">
+      <div class="ai-idx">09</div>
+      <div class="ai-name">Weekly Review Agent</div>
+      <div class="ai-desc">Toda segunda 8h: prioridades da semana, alertas e overview — automaticamente no seu workspace.</div>
+      <div class="ai-kind">Notion Agent</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FINAL CTA
+     ═══════════════════════════════════════════ -->
+<section class="final-cta">
+  <div class="final-cta-inner">
+    <span class="final-cta-label">§ 04 / Começar</span>
+    <div>
+      <h2>
+        Pare de perder deals<br>
+        por <em>falta de contexto.</em>
+      </h2>
+      <p>
+        Duplica pro seu Notion. Preenche a primeira conta. Vê a IA trabalhar. Leva 10 minutos até o primeiro score real.
+      </p>
+      <button class="btn-main" onclick="openModal()" style="font-size:15px; padding:17px 32px;">
+        Pegar o ABM War Room grátis <span class="arrow">→</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════ -->
+<footer>
+  <div>ABM War Room / Notion Template / Powered by Notion AI</div>
+  <div>Por <a href="https://linkedin.com/in/marcelo-camara" target="_blank">Marcelo Câmara</a> · @49</div>
+</footer>
+
+<script>
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+function selectRadio(val) {
+  document.getElementById('radio-sim').classList.remove('selected');
+  document.getElementById('radio-nao').classList.remove('selected');
+  document.getElementById('radio-' + val).classList.add('selected');
+}
+
+async function submitForm() {
+  const name = document.getElementById('inputName').value.trim();
+  const company = document.getElementById('inputCompany').value.trim();
+  const email = document.getElementById('inputEmail').value.trim();
+  const upgradeEl = document.querySelector('.radio-option.selected input');
+  const upgrade = upgradeEl ? upgradeEl.value : 'nao respondeu';
+
+  if (!name || !company || !email) {
+    alert('Por favor, preencha todos os campos.');
+    return;
+  }
+
+  const btn = document.querySelector('.btn-submit');
+  btn.textContent = 'Enviando...';
+  btn.disabled = true;
+
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbw7aK2tvEIlKE3A5ZrqP0s-iYQw1iL6ALh7Hdn13pfHrmJNWtok8k7jLFWVD3f6GwY/exec';
+
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: name, empresa: company, email: email, upgrade: upgrade })
+    });
+  } catch (err) {
+    console.warn('Sheets webhook error:', err);
+  }
+
+  document.getElementById('modalForm').classList.add('hide');
+  document.getElementById('modalSuccess').classList.add('show');
+}
+</script>
+</body>
+</html>
